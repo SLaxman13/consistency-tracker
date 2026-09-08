@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#FFFFFF" />
+<title>Squad Planner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #FFFFFF; }
+  body { font-family: 'Inter', sans-serif; color: #1C1F26; padding-bottom: 60px; -webkit-tap-highlight-color: transparent; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  ::-webkit-scrollbar { height: 4px; width: 4px; }
+  ::-webkit-scrollbar-thumb { background: #E6E3DC; border-radius: 4px; }
+
+  /* ---- login screen ---- */
+  .login-wrap { min-height: 100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .login-card { width:100%; max-width:340px; }
+  .login-eyebrow { display:flex; align-items:center; gap:6px; color:#8A8F9A; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; justify-content:center; }
+  .login-title { font-size:26px; font-weight:700; text-align:center; margin-bottom:6px; }
+  .login-sub { font-size:13px; color:#8A8F9A; text-align:center; margin-bottom:28px; }
+  .field-label { font-family:'JetBrains Mono',monospace; font-size:10px; color:#8A8F9A; display:block; margin-bottom:6px; }
+  .login-input { width:100%; background:#FCFCFB; border:1px solid #ECEAE4; border-radius:10px; padding:12px 14px; font-size:15px; color:#1C1F26; outline:none; margin-bottom:16px; }
+  .login-input:focus { border-color:#E8A33D; }
+  .login-btn { width:100%; padding:13px; border-radius:10px; font-size:15px; font-weight:600; border:none; cursor:pointer; color:#FFFFFF; background:#E8A33D; margin-top:4px; }
+  .login-btn:disabled { background:#E6E3DC; color:#B0B5BF; }
+  .login-error { color:#C24B36; font-size:12px; margin-top:10px; text-align:center; }
+  .login-note { color:#B0B5BF; font-size:11px; text-align:center; margin-top:18px; line-height:1.5; }
+
+  /* ---- shared header ---- */
+  .header { padding: 20px 20px 14px; border-bottom: 1px solid #ECEAE4; }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+  .eyebrow { display:flex; align-items:center; gap:6px; color:#8A8F9A; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px; }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .badges { display:flex; align-items:center; gap:10px; }
+  .points-badge { display:flex; align-items:center; gap:5px; background:#FBF3E7; border:1px solid #F0DBB4; border-radius:999px; padding:6px 12px; }
+  .points-badge span { font-size:13px; font-weight:600; color:#B4791F; }
+  .nav-row { display:flex; align-items:center; gap:8px; }
+  .nav-btn { font-family:'JetBrains Mono',monospace; font-size:12px; padding:7px 12px; border-radius:8px; border:none; background:#F5F4F0; color:#6B7280; font-weight:500; cursor:pointer; }
+  .nav-btn.active { background:#1C1F26; color:#FFFFFF; }
+  .logout-btn { margin-left:auto; font-size:12px; color:#B0B5BF; background:none; border:none; cursor:pointer; text-decoration:underline; }
+
+  .day-row { display:flex; align-items:center; gap:8px; margin-top:14px; }
+  .day-scroll { flex:1; display:flex; gap:6px; overflow-x:auto; }
+  .day-btn { position:relative; font-family:'JetBrains Mono',monospace; font-size:12px; padding:8px 12px; border-radius:10px; border:none; white-space:nowrap; background:#F5F4F0; color:#6B7280; font-weight:500; cursor:pointer; }
+  .day-btn.active { background:#E8A33D; color:#FFFFFF; font-weight:700; }
+  .day-btn .dot { position:absolute; top:-3px; right:-3px; width:8px; height:8px; border-radius:999px; background:#4C9F70; }
+  .arrow-btn { background:none; border:none; color:#8A8F9A; padding:4px; cursor:pointer; display:flex; }
+
+  .activity-section { padding:16px 20px; border-bottom:1px solid #ECEAE4; }
+  .activity-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .activity-head span { font-family:'JetBrains Mono',monospace; font-size:11px; color:#8A8F9A; text-transform:uppercase; letter-spacing:0.06em; }
+  .heatmap-scroll { overflow-x:auto; }
+  .month-labels { position:relative; height:12px; margin-bottom:4px; }
+  .month-labels span { position:absolute; font-family:'JetBrains Mono',monospace; font-size:9px; color:#A6ACB8; }
+  .heatmap-grid { display:flex; gap:3px; }
+  .heatmap-col { display:flex; flex-direction:column; gap:3px; }
+  .heatmap-cell { width:10px; height:10px; border-radius:2px; background:#EFEDE7; }
+  .heatmap-cell.today { outline:1px solid #1C1F26; outline-offset:1px; }
+  .legend-row { display:flex; align-items:center; justify-content:space-between; margin-top:12px; }
+  .legend { display:flex; align-items:center; gap:5px; }
+  .legend span.label { font-family:'JetBrains Mono',monospace; font-size:9px; color:#A6ACB8; }
+  .legend-swatch { width:9px; height:9px; border-radius:2px; }
+  .streak-line { font-family:'JetBrains Mono',monospace; font-size:10px; color:#B4791F; display:flex; align-items:center; gap:4px; }
+
+  .summary-line { padding:12px 20px; display:flex; align-items:center; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8A8F9A; border-bottom:1px solid #F2F0EA; }
+
+  .timeline { padding: 24px 20px 0; }
+  .empty-state { text-align:center; padding:60px 0; color:#B0B5BF; }
+  .empty-state p:first-of-type { font-size:14px; margin-top:12px; }
+  .empty-state p:last-of-type { font-size:12px; margin-top:4px; color:#C7CBD3; }
+
+  .timeline-inner { position:relative; padding-left:24px; }
+  .timeline-rail { position:absolute; left:7px; top:8px; bottom:8px; width:2px; background:#ECEAE4; }
+  .block-row { position:relative; margin-bottom:16px; }
+  .block-row:last-child { margin-bottom:0; }
+  .block-node { position:absolute; left:-24px; top:4px; width:16px; height:16px; border-radius:999px; border:2px solid; background:#FFFFFF; }
+  .block-card { border-radius:12px; padding:14px; border:1px solid #ECEAE4; background:#FCFCFB; transition:opacity 0.2s; }
+  .block-card.done { opacity:0.5; }
+  .block-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .block-time { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; }
+  .block-tag { font-size:10px; font-family:'JetBrains Mono',monospace; padding:2px 6px; border-radius:6px; margin-left:8px; }
+  .block-points { font-size:10px; font-family:'JetBrains Mono',monospace; padding:2px 6px; border-radius:6px; margin-left:6px; background:#F5F4F0; color:#8A8F9A; }
+  .block-label { font-size:14px; font-weight:500; margin-top:4px; color:#1C1F26; }
+  .block-label.done { text-decoration:line-through; color:#B0B5BF; }
+  .block-actions { display:flex; align-items:center; gap:2px; flex-shrink:0; }
+  .icon-btn { background:none; border:none; padding:6px; border-radius:8px; cursor:pointer; display:flex; }
+  .icon-btn:active { background:#F2F0EA; }
+
+  .add-btn { margin-top:20px; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border-radius:12px; border:1.5px dashed #D8D5CC; background:none; color:#8A8F9A; font-size:14px; font-weight:500; cursor:pointer; }
+  .add-btn:active { border-color:#E8A33D; color:#E8A33D; }
+
+  .form-card { margin-top:20px; padding:16px; border-radius:12px; background:#FCFCFB; border:1px solid #ECEAE4; }
+  .form-card input[type="text"] { width:100%; background:#FFFFFF; border:1px solid #ECEAE4; border-radius:10px; padding:10px 12px; font-size:14px; color:#1C1F26; outline:none; margin-bottom:12px; }
+  .form-card input[type="text"]:focus { border-color:#E8A33D; }
+  .time-row { display:flex; gap:8px; margin-bottom:12px; }
+  .time-field { flex:1; }
+  .time-field label { font-family:'JetBrains Mono',monospace; font-size:10px; color:#8A8F9A; display:block; margin-bottom:4px; }
+  .time-field input { width:100%; background:#FFFFFF; border:1px solid #ECEAE4; border-radius:10px; padding:8px; font-family:'JetBrains Mono',monospace; font-size:13px; color:#1C1F26; outline:none; }
+  .time-field input:focus { border-color:#E8A33D; }
+  .cat-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
+  .cat-chip { font-size:12px; padding:6px 10px; border-radius:999px; font-weight:500; cursor:pointer; background:#FFFFFF; }
+  .form-buttons { display:flex; gap:8px; }
+  .btn { flex:1; padding:10px; border-radius:10px; font-size:14px; font-weight:600; border:none; cursor:pointer; }
+  .btn-cancel { color:#8A8F9A; background:#F5F4F0; }
+  .btn-add { color:#FFFFFF; background:#E8A33D; }
+
+  .footer { padding:20px; margin-top:12px; border-top:1px solid #F2F0EA; }
+  .footer-title { font-family:'JetBrains Mono',monospace; font-size:10px; color:#B0B5BF; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; display:flex; align-items:center; gap:5px; }
+  .footer-legend { display:flex; flex-wrap:wrap; gap:14px 16px; }
+  .footer-legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:#8A8F9A; }
+  .footer-dot { width:8px; height:8px; border-radius:999px; }
+
+  /* ---- leaderboard ---- */
+  .lb-wrap { padding:20px; }
+  .lb-row { display:flex; align-items:center; gap:12px; padding:14px; border-radius:12px; border:1px solid #ECEAE4; background:#FCFCFB; margin-bottom:10px; }
+  .lb-row.me { border-color:#E8A33D; background:#FFFBF3; }
+  .lb-rank { width:28px; text-align:center; font-family:'JetBrains Mono',monospace; font-weight:700; color:#B0B5BF; font-size:14px; flex-shrink:0; }
+  .lb-rank.top1 { color:#E8A33D; }
+  .lb-name { flex:1; min-width:0; }
+  .lb-name .n { font-size:14px; font-weight:600; }
+  .lb-name .s { font-size:11px; color:#8A8F9A; font-family:'JetBrains Mono',monospace; margin-top:2px; }
+  .lb-points { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px; color:#1C1F26; flex-shrink:0; }
+  .lb-loading, .lb-empty { text-align:center; padding:40px 0; color:#B0B5BF; font-size:13px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<!-- Firebase (compat build — works with plain <script> tags, no bundler needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  // ======================================================================
+  // FIREBASE CONFIG — replace with YOUR project's config from the Firebase
+  // console (Project settings > General > Your apps > SDK setup and config).
+  // ======================================================================
+  var firebaseConfig = {
+    apiKey: "AIzaSyDe-W0VkGjtwL2aHmDvg_RpRFS-MAKxXw8",
+    authDomain: "teamsquad-fd6f8.firebaseapp.com",
+    projectId: "teamsquad-fd6f8",
+    storageBucket: "teamsquad-fd6f8.firebasestorage.app",
+    messagingSenderId: "528019884141",
+    appId: "1:528019884141:web:db442a2f883123461f5764"
+  };
+  var MAX_USERS = 10;
+
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.firestore();
+
+  var DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  var FULL_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  var BASE_POINTS = 10;      // every completed block earns this, regardless of category
+  var STREAK_BONUS = 5;      // extra points per consecutive active day, rewards consistency
+  var CATEGORIES = [
+    { id: "dsa", label: "DSA", color: "#B4791F", bg: "#FBF3E7" },
+    { id: "apt", label: "Aptitude", color: "#2E7D74", bg: "#E9F5F3" },
+    { id: "project", label: "Project", color: "#6650C4", bg: "#EFEBFB" },
+    { id: "cat", label: "CAT", color: "#C24B36", bg: "#FBEAE6" }
+  ];
+  var HEAT_COLORS = ["#EFEDE7", "#F3E3C4", "#F0C878", "#E8A33D"];
+
+  function catById(id) { for (var i=0;i<CATEGORIES.length;i++) if (CATEGORIES[i].id===id) return CATEGORIES[i]; return CATEGORIES[0]; }
+  function uid() { return Math.random().toString(36).slice(2, 9); }
+  function toMinutes(t) { var p = t.split(":"); return parseInt(p[0],10)*60 + parseInt(p[1],10); }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function dateKey(d) { return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate()); }
+  function weekdayKeyFor(d) { return DAYS[(d.getDay() + 6) % 7]; }
+  function startOfDay(d) { var c = new Date(d); c.setHours(0,0,0,0); return c; }
+  function addDays(d, n) { var c = new Date(d); c.setDate(c.getDate()+n); return c; }
+  function escapeHtml(s) { var div = document.createElement("div"); div.textContent = s; return div.innerHTML; }
+  function userKeyFor(name) { return name.trim().toLowerCase().replace(/\s+/g, "-"); }
+
+  var state = {
+    screen: "login",           // login | planner | leaderboard
+    loginError: "",
+    loginBusy: false,
+    userKey: null,
+    displayName: null,
+    schedule: {},
+    activityLog: {},
+    activeDay: weekdayKeyFor(new Date()),
+    showForm: false,
+    form: { start: "09:00", end: "10:00", label: "", cat: "dsa" },
+    leaderboard: null          // null = not loaded yet
+  };
+
+  // ---------------- persistence ----------------
+  function persist() {
+    if (!state.userKey) return;
+    db.collection("users").doc(state.userKey).set({
+      name: state.displayName,
+      schedule: state.schedule,
+      activityLog: state.activityLog
+    }, { merge: true }).catch(function (e) { console.error("save failed", e); });
+  }
+
+  function saveSession() {
+    try { localStorage.setItem("squad_session", JSON.stringify({ key: state.userKey, name: state.displayName })); } catch (e) {}
+  }
+  function loadSession() {
+    try {
+      var raw = localStorage.getItem("squad_session");
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function clearSession() {
+    try { localStorage.removeItem("squad_session"); } catch (e) {}
+  }
+
+  // ---------------- auth ----------------
+  function attemptLogin(name, pin) {
+    if (!name.trim() || !pin.trim()) {
+      state.loginError = "Enter both your name and PIN.";
+      render();
+      return;
+    }
+    state.loginBusy = true;
+    state.loginError = "";
+    render();
+
+    var key = userKeyFor(name);
+    var ref = db.collection("users").doc(key);
+
+    ref.get().then(function (doc) {
+      if (doc.exists) {
+        var data = doc.data();
+        if (String(data.pin) !== String(pin)) {
+          state.loginBusy = false;
+          state.loginError = "Wrong PIN for that name.";
+          render();
+          return;
+        }
+        finishLogin(key, data.name || name, data.schedule || {}, data.activityLog || {});
+      } else {
+        // new user — check the 10-user cap first
+        db.collection("users").get().then(function (snap) {
+          if (snap.size >= MAX_USERS) {
+            state.loginBusy = false;
+            state.loginError = "This squad is full (10/10). Ask a friend for their spot, or use an existing name.";
+            render();
+            return;
+          }
+          ref.set({ name: name.trim(), pin: pin.trim(), schedule: {}, activityLog: {}, createdAt: Date.now() })
+            .then(function () { finishLogin(key, name.trim(), {}, {}); })
+            .catch(function (e) {
+              state.loginBusy = false;
+              state.loginError = "Couldn't create your profile. Check your internet connection.";
+              render();
+            });
+        });
+      }
+    }).catch(function (e) {
+      state.loginBusy = false;
+      state.loginError = "Couldn't reach the server — check your Firebase config and internet connection.";
+      render();
+    });
+  }
+
+  function finishLogin(key, name, schedule, activityLog) {
+    state.userKey = key;
+    state.displayName = name;
+    state.schedule = schedule;
+    state.activityLog = activityLog;
+    state.loginBusy = false;
+    state.screen = "planner";
+    saveSession();
+    render();
+  }
+
+  function logout() {
+    clearSession();
+    state.screen = "login";
+    state.userKey = null;
+    state.displayName = null;
+    state.schedule = {};
+    state.activityLog = {};
+    render();
+  }
+
+  // ---------------- derived data ----------------
+  function getDayBlocks() {
+    var blocks = (state.schedule[state.activeDay] || []).slice();
+    blocks.sort(function (a, b) { return toMinutes(a.start) - toMinutes(b.start); });
+    return blocks;
+  }
+  function isActiveDate(log, key) { var e = log[key]; return !!(e && e.done > 0); }
+  function computeStreak(log, todayKey, today) {
+    var streak = 0;
+    var cursor = isActiveDate(log, todayKey) ? today : addDays(today, -1);
+    while (isActiveDate(log, dateKey(cursor))) { streak++; cursor = addDays(cursor, -1); }
+    return streak;
+  }
+  function totalPointsOf(log) {
+    var sum = 0;
+    Object.keys(log).forEach(function (k) { sum += (log[k].points || 0); });
+    return sum;
+  }
+
+  // ---------------- actions ----------------
+  function toggleDone(id) {
+    var today = startOfDay(new Date());
+    var todayWeekday = weekdayKeyFor(today);
+    var blocks = (state.schedule[state.activeDay] || []).map(function (b) {
+      return b.id === id ? Object.assign({}, b, { done: !b.done }) : b;
+    });
+    state.schedule[state.activeDay] = blocks;
+    if (state.activeDay === todayWeekday) {
+      var done = blocks.filter(function (b) { return b.done; });
+      var todayKey = dateKey(today);
+      // Set a tentative entry first so computeStreak sees today as active (if it now is).
+      state.activityLog[todayKey] = { done: done.length, total: blocks.length, points: 0 };
+      var streak = computeStreak(state.activityLog, todayKey, today);
+      var points = done.length > 0 ? (done.length * BASE_POINTS) + (streak * STREAK_BONUS) : 0;
+      state.activityLog[todayKey] = { done: done.length, total: blocks.length, points: points };
+    }
+    persist();
+    render();
+  }
+  function removeBlock(id) {
+    state.schedule[state.activeDay] = (state.schedule[state.activeDay] || []).filter(function (b) { return b.id !== id; });
+    persist();
+    render();
+  }
+  function addBlock() {
+    if (!state.form.label.trim()) return;
+    var blocks = state.schedule[state.activeDay] || [];
+    blocks.push({ id: uid(), start: state.form.start, end: state.form.end, label: state.form.label.trim(), cat: state.form.cat, done: false });
+    state.schedule[state.activeDay] = blocks;
+    state.form = { start: "09:00", end: "10:00", label: "", cat: "dsa" };
+    state.showForm = false;
+    persist();
+    render();
+  }
+  function shiftDay(dir) {
+    var idx = DAYS.indexOf(state.activeDay);
+    state.activeDay = DAYS[(idx + dir + 7) % 7];
+    render();
+  }
+
+  function loadLeaderboard() {
+    state.leaderboard = null; // loading
+    render();
+    db.collection("users").get().then(function (snap) {
+      var today = startOfDay(new Date());
+      var todayKey = dateKey(today);
+      var rows = [];
+      snap.forEach(function (doc) {
+        var data = doc.data();
+        var log = data.activityLog || {};
+        rows.push({
+          key: doc.id,
+          name: data.name || doc.id,
+          points: totalPointsOf(log),
+          streak: computeStreak(log, todayKey, today),
+          activeDays: Object.keys(log).filter(function (k) { return log[k].done > 0; }).length
+        });
+      });
+      rows.sort(function (a, b) { return b.points - a.points; });
+      state.leaderboard = rows;
+      render();
+    }).catch(function () {
+      state.leaderboard = [];
+      render();
+    });
+  }
+
+  // ---------------- rendering: login ----------------
+  function renderLogin() {
+    return (
+      '<div class="login-wrap"><div class="login-card">' +
+        '<div class="login-eyebrow">📡 Squad Planner</div>' +
+        '<div class="login-title">Study together</div>' +
+        '<div class="login-sub">Up to 10 friends, one shared leaderboard</div>' +
+        '<label class="field-label">YOUR NAME</label>' +
+        '<input class="login-input" type="text" id="loginName" placeholder="e.g. Ashwin" autocomplete="off" />' +
+        '<label class="field-label">PIN (create one if you\'re new)</label>' +
+        '<input class="login-input" type="password" inputmode="numeric" id="loginPin" placeholder="4-digit PIN" autocomplete="off" />' +
+        '<button class="login-btn" ' + (state.loginBusy ? 'disabled' : '') + ' onclick="Squad.login()">' +
+          (state.loginBusy ? 'Connecting…' : 'Continue') +
+        '</button>' +
+        (state.loginError ? '<div class="login-error">' + escapeHtml(state.loginError) + '</div>' : '') +
+        '<div class="login-note">First time typing a name creates your profile with that PIN. Reuse the same name + PIN next time to get back into your data.</div>' +
+      '</div></div>'
+    );
+  }
+
+  // ---------------- rendering: planner pieces ----------------
+  function renderRing(pct) {
+    var size = 48, r = (size - 8) / 2, c = 2 * Math.PI * r;
+    var offset = c - (pct / 100) * c;
+    return '<svg width="' + size + '" height="' + size + '">' +
+      '<circle cx="' + size/2 + '" cy="' + size/2 + '" r="' + r + '" stroke="#ECEAE4" stroke-width="6" fill="none" />' +
+      '<circle cx="' + size/2 + '" cy="' + size/2 + '" r="' + r + '" stroke="#E8A33D" stroke-width="6" fill="none" ' +
+      'stroke-dasharray="' + c + '" stroke-dashoffset="' + offset + '" stroke-linecap="round" ' +
+      'transform="rotate(-90 ' + size/2 + ' ' + size/2 + ')" style="transition:stroke-dashoffset 0.4s ease" />' +
+      '<text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle" fill="#1C1F26" font-size="12" ' +
+      'font-family="JetBrains Mono, monospace" font-weight="600">' + pct + '%</text></svg>';
+  }
+
+  function renderHeatmap(todayKey, activeDaysCount, streak) {
+    var WEEKS = 14;
+    var todayDate = startOfDay(new Date());
+    var daysSinceSunday = todayDate.getDay();
+    var gridEnd = addDays(todayDate, 6 - daysSinceSunday);
+    var totalDays = WEEKS * 7;
+    var gridStart = addDays(gridEnd, -(totalDays - 1));
+
+    function cellColor(key) {
+      var e = state.activityLog[key];
+      if (!e || e.total === 0) return HEAT_COLORS[0];
+      var ratio = e.done / e.total;
+      if (ratio === 0) return HEAT_COLORS[0];
+      if (ratio < 0.5) return HEAT_COLORS[1];
+      if (ratio < 1) return HEAT_COLORS[2];
+      return HEAT_COLORS[3];
+    }
+
+    var columns = [];
+    for (var w = 0; w < WEEKS; w++) {
+      var col = [];
+      for (var d = 0; d < 7; d++) {
+        var date = addDays(gridStart, w * 7 + d);
+        col.push(date > todayDate ? null : date);
+      }
+      columns.push(col);
+    }
+    var monthLabels = [];
+    var lastMonth = -1;
+    columns.forEach(function (col, i) {
+      var firstReal = null;
+      for (var k = 0; k < col.length; k++) { if (col[k]) { firstReal = col[k]; break; } }
+      if (firstReal && firstReal.getMonth() !== lastMonth && firstReal.getDate() <= 7) {
+        lastMonth = firstReal.getMonth();
+        monthLabels.push({ i: i, label: firstReal.toLocaleString("default", { month: "short" }) });
+      }
+    });
+    var monthHtml = monthLabels.map(function (m) { return '<span style="left:' + (m.i * 13) + 'px">' + m.label + '</span>'; }).join("");
+    var gridHtml = columns.map(function (col) {
+      var cellsHtml = col.map(function (date) {
+        if (!date) return '<div class="heatmap-cell" style="background:transparent"></div>';
+        var key = dateKey(date);
+        var isToday = key === todayKey;
+        var entry = state.activityLog[key];
+        var tip = key + (entry ? (": " + entry.done + "/" + entry.total + " · " + (entry.points||0) + "pts") : "");
+        return '<div class="heatmap-cell' + (isToday ? ' today' : '') + '" title="' + tip + '" style="background:' + cellColor(key) + '"></div>';
+      }).join("");
+      return '<div class="heatmap-col">' + cellsHtml + '</div>';
+    }).join("");
+    var legendSwatches = HEAT_COLORS.map(function (c) { return '<div class="legend-swatch" style="background:' + c + '"></div>'; }).join("");
+
+    return (
+      '<div class="activity-section">' +
+        '<div class="activity-head"><span>Your Activity</span><span>' + activeDaysCount + ' active days</span></div>' +
+        '<div class="heatmap-scroll"><div style="min-width:' + (WEEKS*13) + 'px">' +
+          '<div class="month-labels">' + monthHtml + '</div>' +
+          '<div class="heatmap-grid">' + gridHtml + '</div>' +
+        '</div></div>' +
+        '<div class="legend-row">' +
+          '<div class="legend"><span class="label">Less</span>' + legendSwatches + '<span class="label">More</span></div>' +
+          (streak > 0 ? '<span class="streak-line">🔥 ' + streak + ' day streak</span>' : '<span></span>') +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderBlock(b) {
+    var cat = catById(b.cat);
+    return (
+      '<div class="block-row">' +
+        '<div class="block-node" style="border-color:' + cat.color + ';' + (b.done ? ('background:' + cat.color) : '') + '"></div>' +
+        '<div class="block-card' + (b.done ? ' done' : '') + '">' +
+          '<div class="block-top">' +
+            '<div style="flex:1;min-width:0">' +
+              '<span class="block-time" style="color:' + cat.color + '">' + b.start + ' – ' + b.end + '</span>' +
+              '<span class="block-tag" style="background:' + cat.bg + ';color:' + cat.color + '">' + cat.label + '</span>' +
+              '<span class="block-points">+' + BASE_POINTS + 'pt</span>' +
+              '<div class="block-label' + (b.done ? ' done' : '') + '">' + escapeHtml(b.label) + '</div>' +
+            '</div>' +
+            '<div class="block-actions">' +
+              '<button class="icon-btn" onclick="Squad.toggleDone(\'' + b.id + '\')" aria-label="Toggle done">' +
+                (b.done
+                  ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3E8F5E" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>'
+                  : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C7CBD3" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>') +
+              '</button>' +
+              '<button class="icon-btn" onclick="Squad.removeBlock(\'' + b.id + '\')" aria-label="Delete">' +
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7CBD3" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m2 0v14a2 2 0 01-2 2H8a2 2 0 01-2-2V6h12z"/></svg>' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderForm() {
+    if (!state.showForm) {
+      return '<button class="add-btn" onclick="Squad.toggleForm()">+ Add block to ' + state.activeDay + '</button>';
+    }
+    var chips = CATEGORIES.map(function (c) {
+      var active = state.form.cat === c.id;
+      return '<div class="cat-chip" onclick="Squad.setCat(\'' + c.id + '\')" style="' +
+        (active ? ('background:' + c.color + ';color:#fff;border:1px solid ' + c.color) : ('color:' + c.color + ';border:1px solid ' + c.color)) +
+        '">' + c.label + '</div>';
+    }).join("");
+    return (
+      '<div class="form-card">' +
+        '<input type="text" placeholder="What are you working on?" value="' + escapeHtml(state.form.label) + '" oninput="Squad.setLabel(this.value)" />' +
+        '<div class="time-row">' +
+          '<div class="time-field"><label>START</label><input type="time" value="' + state.form.start + '" onchange="Squad.setStart(this.value)" /></div>' +
+          '<div class="time-field"><label>END</label><input type="time" value="' + state.form.end + '" onchange="Squad.setEnd(this.value)" /></div>' +
+        '</div>' +
+        '<div class="cat-row">' + chips + '</div>' +
+        '<div class="form-buttons">' +
+          '<button class="btn btn-cancel" onclick="Squad.toggleForm()">Cancel</button>' +
+          '<button class="btn btn-add" onclick="Squad.addBlock()">Add block</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderPlanner() {
+    var today = startOfDay(new Date());
+    var todayKey = dateKey(today);
+    var streak = computeStreak(state.activityLog, todayKey, today);
+    var activeDaysCount = Object.keys(state.activityLog).filter(function (k) { return state.activityLog[k].done > 0; }).length;
+    var myPoints = totalPointsOf(state.activityLog);
+
+    var dayBlocks = getDayBlocks();
+    var doneCount = dayBlocks.filter(function (b) { return b.done; }).length;
+    var pct = dayBlocks.length ? Math.round((doneCount / dayBlocks.length) * 100) : 0;
+
+    var dayButtons = DAYS.map(function (d) {
+      var blocks = state.schedule[d] || [];
+      var complete = blocks.length > 0 && blocks.every(function (b) { return b.done; });
+      var active = d === state.activeDay;
+      return '<button class="day-btn' + (active ? ' active' : '') + '" onclick="Squad.setDay(\'' + d + '\')">' + d +
+        (complete && !active ? '<span class="dot"></span>' : '') + '</button>';
+    }).join("");
+
+    var timelineHtml;
+    if (dayBlocks.length === 0) {
+      timelineHtml = '<div class="empty-state">' +
+        '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D8D5CC" stroke-width="2" style="margin:0 auto"><circle cx="12" cy="12" r="10"/></svg>' +
+        '<p>No blocks scheduled for ' + state.activeDay + '.</p><p>Add your first task block below.</p>' +
+      '</div>';
+    } else {
+      timelineHtml = '<div class="timeline-inner"><div class="timeline-rail"></div>' + dayBlocks.map(renderBlock).join("") + '</div>';
+    }
+
+    var footerLegend = CATEGORIES.map(function (c) {
+      return '<div class="footer-legend-item"><span class="footer-dot" style="background:' + c.color + '"></span>' + c.label + '</div>';
+    }).join("");
+
+    return (
+      '<div class="header">' +
+        '<div class="header-top">' +
+          '<div><div class="eyebrow">📡 Signal Schedule</div><h1>Hey, ' + escapeHtml(state.displayName) + '</h1></div>' +
+          '<div class="badges"><div class="points-badge">⭐<span>' + myPoints + ' pts</span></div>' + renderRing(pct) + '</div>' +
+        '</div>' +
+        '<div class="nav-row">' +
+          '<button class="nav-btn active">My Schedule</button>' +
+          '<button class="nav-btn" onclick="Squad.goLeaderboard()">Leaderboard</button>' +
+          '<button class="logout-btn" onclick="Squad.logout()">Switch user</button>' +
+        '</div>' +
+        '<div class="day-row">' +
+          '<button class="arrow-btn" onclick="Squad.shiftDay(-1)">‹</button>' +
+          '<div class="day-scroll">' + dayButtons + '</div>' +
+          '<button class="arrow-btn" onclick="Squad.shiftDay(1)">›</button>' +
+        '</div>' +
+      '</div>' +
+      renderHeatmap(todayKey, activeDaysCount, streak) +
+      '<div class="summary-line"><span>' + FULL_DAYS[DAYS.indexOf(state.activeDay)] + '</span><span>' + doneCount + '/' + dayBlocks.length + ' blocks done</span></div>' +
+      '<div class="timeline">' + timelineHtml + renderForm() + '</div>' +
+      '<div class="footer"><div class="footer-title">⚡ Categories · 10pt/task + 5pt per streak day</div><div class="footer-legend">' + footerLegend + '</div></div>'
+    );
+  }
+
+  function renderLeaderboard() {
+    var header =
+      '<div class="header">' +
+        '<div class="header-top"><div><div class="eyebrow">📡 Signal Schedule</div><h1>Leaderboard</h1></div></div>' +
+        '<div class="nav-row">' +
+          '<button class="nav-btn" onclick="Squad.goPlanner()">My Schedule</button>' +
+          '<button class="nav-btn active">Leaderboard</button>' +
+          '<button class="logout-btn" onclick="Squad.logout()">Switch user</button>' +
+        '</div>' +
+      '</div>';
+
+    if (state.leaderboard === null) {
+      return header + '<div class="lb-wrap"><div class="lb-loading">Loading squad standings…</div></div>';
+    }
+    if (state.leaderboard.length === 0) {
+      return header + '<div class="lb-wrap"><div class="lb-empty">No one has logged activity yet. Be the first!</div></div>';
+    }
+    var rows = state.leaderboard.map(function (r, i) {
+      var isMe = r.key === state.userKey;
+      return (
+        '<div class="lb-row' + (isMe ? ' me' : '') + '">' +
+          '<div class="lb-rank' + (i === 0 ? ' top1' : '') + '">' + (i + 1) + '</div>' +
+          '<div class="lb-name"><div class="n">' + escapeHtml(r.name) + (isMe ? ' (you)' : '') + '</div>' +
+          '<div class="s">🔥 ' + r.streak + ' streak · ' + r.activeDays + ' active days</div></div>' +
+          '<div class="lb-points">' + r.points + '</div>' +
+        '</div>'
+      );
+    }).join("");
+    return header + '<div class="lb-wrap">' + rows + '</div>';
+  }
+
+  // ---------------- root render ----------------
+  function render() {
+    var html;
+    if (state.screen === "login") html = renderLogin();
+    else if (state.screen === "leaderboard") html = renderLeaderboard();
+    else html = renderPlanner();
+    document.getElementById("app").innerHTML = html;
+  }
+
+  window.Squad = {
+    login: function () {
+      var name = document.getElementById("loginName").value;
+      var pin = document.getElementById("loginPin").value;
+      attemptLogin(name, pin);
+    },
+    toggleDone: toggleDone,
+    removeBlock: removeBlock,
+    addBlock: addBlock,
+    shiftDay: shiftDay,
+    setDay: function (d) { state.activeDay = d; render(); },
+    toggleForm: function () { state.showForm = !state.showForm; render(); },
+    setLabel: function (v) { state.form.label = v; },
+    setStart: function (v) { state.form.start = v; },
+    setEnd: function (v) { state.form.end = v; },
+    setCat: function (c) { state.form.cat = c; render(); },
+    goLeaderboard: function () { state.screen = "leaderboard"; loadLeaderboard(); },
+    goPlanner: function () { state.screen = "planner"; render(); },
+    logout: logout
+  };
+
+  // ---------------- boot ----------------
+  var session = loadSession();
+  if (session && session.key) {
+    state.loginBusy = true;
+    render();
+    db.collection("users").doc(session.key).get().then(function (doc) {
+      if (doc.exists) {
+        var data = doc.data();
+        finishLogin(session.key, data.name || session.name, data.schedule || {}, data.activityLog || {});
+      } else {
+        clearSession();
+        state.loginBusy = false;
+        render();
+      }
+    }).catch(function () {
+      state.loginBusy = false;
+      render();
+    });
+  } else {
+    render();
+  }
+})();
+</script>
+</body>
+</html>
